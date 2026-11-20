@@ -12,6 +12,60 @@ import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/image_picker_box.dart';
 import '../services/teacher_service.dart';
 
+class TeacherEntryItem {
+  final TextEditingController fullNameCtrl = TextEditingController();
+  final TextEditingController fatherNameCtrl = TextEditingController();
+  final TextEditingController motherNameCtrl = TextEditingController();
+  final TextEditingController dobCtrl = TextEditingController();
+  final TextEditingController mobileCtrl = TextEditingController();
+  final TextEditingController altMobileCtrl = TextEditingController();
+  final TextEditingController emailCtrl = TextEditingController();
+  final TextEditingController addressCtrl = TextEditingController();
+  final TextEditingController subjectCtrl = TextEditingController();
+  final TextEditingController dojCtrl = TextEditingController();
+  final TextEditingController qualificationCtrl = TextEditingController();
+
+  String selectedGender = 'Male';
+  String selectedBloodGroup = 'O+';
+  String selectedDesignation = 'Assistant Teacher';
+
+  PickedMediaFile? photoFile;
+  String? existingPhotoPath;
+
+  void dispose() {
+    fullNameCtrl.dispose();
+    fatherNameCtrl.dispose();
+    motherNameCtrl.dispose();
+    dobCtrl.dispose();
+    mobileCtrl.dispose();
+    altMobileCtrl.dispose();
+    emailCtrl.dispose();
+    addressCtrl.dispose();
+    subjectCtrl.dispose();
+    dojCtrl.dispose();
+    qualificationCtrl.dispose();
+  }
+
+  Map<String, String> toMap() {
+    return {
+      'full_name': fullNameCtrl.text.trim(),
+      'father_name': fatherNameCtrl.text.trim(),
+      'mother_name': motherNameCtrl.text.trim(),
+      'dob': dobCtrl.text.trim(),
+      'gender': selectedGender,
+      'blood_group': selectedBloodGroup,
+      'mobile_number': mobileCtrl.text.trim(),
+      'alternate_number': altMobileCtrl.text.trim(),
+      'email': emailCtrl.text.trim(),
+      'residential_address': addressCtrl.text.trim(),
+      'designation': selectedDesignation,
+      'subject': subjectCtrl.text.trim(),
+      'date_of_joining': dojCtrl.text.trim(),
+      'qualification': qualificationCtrl.text.trim(),
+    };
+  }
+}
+
 class TeacherFormScreen extends StatefulWidget {
   final int? editTeacherId;
 
@@ -24,54 +78,79 @@ class TeacherFormScreen extends StatefulWidget {
 class _TeacherFormScreenState extends State<TeacherFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Text Controllers
-  final _teacherIdCtrl = TextEditingController();
-  final _fullNameCtrl = TextEditingController();
-  final _fatherNameCtrl = TextEditingController();
-  final _motherNameCtrl = TextEditingController();
-  final _dobCtrl = TextEditingController();
-  final _mobileCtrl = TextEditingController();
-  final _altMobileCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
+  // Common School & Authorization Controllers (Shared for all teachers in batch)
   final _schoolNameCtrl = TextEditingController();
   final _schoolAddressCtrl = TextEditingController();
-  final _subjectCtrl = TextEditingController();
-  final _dojCtrl = TextEditingController();
+  final _udiseCtrl = TextEditingController();
   final _blockCtrl = TextEditingController();
   final _districtCtrl = TextEditingController();
   final _stateCtrl = TextEditingController();
-  final _udiseCtrl = TextEditingController();
-  final _qualificationCtrl = TextEditingController();
   final _headmasterNameCtrl = TextEditingController();
 
-  // Dropdown values
-  String? _selectedGender = 'Male';
-  String? _selectedBloodGroup = 'O+';
-  String? _selectedDesignation = 'Assistant Teacher';
-
-  // Files
-  PickedMediaFile? _photoFile;
   PickedMediaFile? _signatureFile;
   PickedMediaFile? _sealFile;
-
-  // Existing remote paths (in case of edit)
-  String? _existingPhotoPath;
   String? _existingSignaturePath;
   String? _existingSealPath;
+
+  // Single edit teacher ID controller
+  final _teacherIdCtrl = TextEditingController();
+
+  // List of teachers being prepared in this batch
+  final List<TeacherEntryItem> _teacherItems = [];
 
   bool _isLoading = false;
   bool _isFetchingInitial = false;
 
+  bool get isEdit => widget.editTeacherId != null;
+
   @override
   void initState() {
     super.initState();
-    if (widget.editTeacherId != null) {
+    // Default initial school location
+    _stateCtrl.text = 'Bihar';
+    _districtCtrl.text = 'Patna';
+    _blockCtrl.text = 'Patna Sadar';
+
+    if (isEdit) {
       _loadExistingTeacher(widget.editTeacherId!);
     } else {
-      // Defaults
-      _stateCtrl.text = 'Bihar';
-      _districtCtrl.text = 'Patna';
+      // Start with 1 teacher row ready for input
+      _addNewTeacherRow();
+    }
+  }
+
+  @override
+  void dispose() {
+    _schoolNameCtrl.dispose();
+    _schoolAddressCtrl.dispose();
+    _udiseCtrl.dispose();
+    _blockCtrl.dispose();
+    _districtCtrl.dispose();
+    _stateCtrl.dispose();
+    _headmasterNameCtrl.dispose();
+    _teacherIdCtrl.dispose();
+
+    for (final item in _teacherItems) {
+      item.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addNewTeacherRow() {
+    setState(() {
+      final item = TeacherEntryItem();
+      // Pre-fill today's date for joining as quick default
+      item.dojCtrl.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      _teacherItems.add(item);
+    });
+  }
+
+  void _removeTeacherRow(int index) {
+    if (_teacherItems.length > 1) {
+      setState(() {
+        final removed = _teacherItems.removeAt(index);
+        removed.dispose();
+      });
     }
   }
 
@@ -81,41 +160,48 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
     if (teacher != null && mounted) {
       setState(() {
         _teacherIdCtrl.text = teacher.teacherId;
-        _fullNameCtrl.text = teacher.fullName;
-        _fatherNameCtrl.text = teacher.fatherName;
-        _motherNameCtrl.text = teacher.motherName;
-        _dobCtrl.text = teacher.dob;
-        _selectedGender = teacher.gender;
-        _selectedBloodGroup = teacher.bloodGroup;
-        _mobileCtrl.text = teacher.mobileNumber;
-        _altMobileCtrl.text = teacher.alternateNumber ?? '';
-        _emailCtrl.text = teacher.email;
-        _addressCtrl.text = teacher.residentialAddress;
         _schoolNameCtrl.text = teacher.schoolName;
         _schoolAddressCtrl.text = teacher.schoolAddress;
-        _selectedDesignation = teacher.designation;
-        _subjectCtrl.text = teacher.subject;
-        _dojCtrl.text = teacher.dateOfJoining;
         _blockCtrl.text = teacher.blockName;
         _districtCtrl.text = teacher.districtName;
         _stateCtrl.text = teacher.state;
         _udiseCtrl.text = teacher.udiseCode;
-        _qualificationCtrl.text = teacher.qualification;
         _headmasterNameCtrl.text = teacher.headmasterName;
-
-        _existingPhotoPath = teacher.photoPath;
         _existingSignaturePath = teacher.headmasterSignaturePath;
         _existingSealPath = teacher.officialSealPath;
+
+        final item = TeacherEntryItem();
+        item.fullNameCtrl.text = teacher.fullName;
+        item.fatherNameCtrl.text = teacher.fatherName;
+        item.motherNameCtrl.text = teacher.motherName;
+        item.dobCtrl.text = teacher.dob;
+        item.selectedGender = teacher.gender;
+        item.selectedBloodGroup = teacher.bloodGroup.isNotEmpty ? teacher.bloodGroup : 'O+';
+        item.mobileCtrl.text = teacher.mobileNumber;
+        item.altMobileCtrl.text = teacher.alternateNumber ?? '';
+        item.emailCtrl.text = teacher.email;
+        item.addressCtrl.text = teacher.residentialAddress;
+        item.selectedDesignation = teacher.designation;
+        item.subjectCtrl.text = teacher.subject;
+        item.dojCtrl.text = teacher.dateOfJoining;
+        item.qualificationCtrl.text = teacher.qualification;
+        item.existingPhotoPath = teacher.photoPath;
+
+        _teacherItems.clear();
+        _teacherItems.add(item);
       });
     }
     setState(() => _isFetchingInitial = false);
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
-    DateTime initial = DateTime.now().subtract(const Duration(days: 365 * 25));
-    if (controller.text.isNotEmpty) {
+  Future<void> _pickDateForController(TextEditingController controller, {bool isDob = false}) async {
+    DateTime initial = isDob
+        ? DateTime.now().subtract(const Duration(days: 365 * 25))
+        : DateTime.now();
+
+    if (controller.text.trim().isNotEmpty) {
       try {
-        initial = DateTime.parse(controller.text);
+        initial = DateTime.parse(controller.text.trim());
       } catch (_) {}
     }
 
@@ -135,72 +221,115 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please correct validation errors before saving.'),
+          content: Text('Please correct highlighted validation errors.'),
           backgroundColor: AppColors.danger,
         ),
       );
       return;
     }
 
+    // Verify at least one teacher has a full name
+    for (int i = 0; i < _teacherItems.length; i++) {
+      if (_teacherItems[i].fullNameCtrl.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Teacher #${i + 1} is missing Full Name.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
 
-    final fields = {
-      'teacher_id': _teacherIdCtrl.text.trim(),
-      'full_name': _fullNameCtrl.text.trim(),
-      'father_name': _fatherNameCtrl.text.trim(),
-      'mother_name': _motherNameCtrl.text.trim(),
-      'dob': _dobCtrl.text.trim(),
-      'gender': _selectedGender ?? 'Male',
-      'blood_group': _selectedBloodGroup ?? 'O+',
-      'mobile_number': _mobileCtrl.text.trim(),
-      'alternate_number': _altMobileCtrl.text.trim(),
-      'email': _emailCtrl.text.trim(),
-      'residential_address': _addressCtrl.text.trim(),
+    final commonFields = {
       'school_name': _schoolNameCtrl.text.trim(),
       'school_address': _schoolAddressCtrl.text.trim(),
-      'designation': _selectedDesignation ?? 'Assistant Teacher',
-      'subject': _subjectCtrl.text.trim(),
-      'date_of_joining': _dojCtrl.text.trim(),
       'block_name': _blockCtrl.text.trim(),
       'district_name': _districtCtrl.text.trim(),
       'state': _stateCtrl.text.trim(),
       'udise_code': _udiseCtrl.text.trim(),
-      'qualification': _qualificationCtrl.text.trim(),
       'headmaster_name': _headmasterNameCtrl.text.trim(),
     };
 
-    final res = await TeacherService.saveTeacher(
-      id: widget.editTeacherId,
-      fields: fields,
-      photoFile: _photoFile,
-      signatureFile: _signatureFile,
-      sealFile: _sealFile,
-    );
+    if (isEdit) {
+      // Single Teacher Update Mode
+      final singleItem = _teacherItems.first;
+      final fields = {
+        ...commonFields,
+        ...singleItem.toMap(),
+        'teacher_id': _teacherIdCtrl.text.trim(),
+      };
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+      final res = await TeacherService.saveTeacher(
+        id: widget.editTeacherId,
+        fields: fields,
+        photoFile: singleItem.photoFile,
+        signatureFile: _signatureFile,
+        sealFile: _sealFile,
+      );
 
-      if (res.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.editTeacherId != null
-                  ? 'Teacher updated successfully!'
-                  : 'Teacher registered successfully with ID: ${res.data?.teacherId ?? ""}',
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (res.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Teacher updated successfully!'),
+              backgroundColor: AppColors.success,
             ),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        final nav = context.read<NavigationProvider>();
-        nav.clearEditSelections();
-        nav.navigateTo(AppTab.teacherList);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.message ?? 'An error occurred while saving teacher data.'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
+          );
+          final nav = context.read<NavigationProvider>();
+          nav.clearEditSelections();
+          nav.navigateTo(AppTab.teacherList);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res.message ?? 'Failed to update teacher'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    } else {
+      // Multi-Teacher Batch Mode
+      final teachersList = _teacherItems.map((item) => item.toMap()).toList();
+      final photosMap = <int, PickedMediaFile?>{};
+      for (int i = 0; i < _teacherItems.length; i++) {
+        if (_teacherItems[i].photoFile != null) {
+          photosMap[i] = _teacherItems[i].photoFile;
+        }
+      }
+
+      final res = await TeacherService.saveBatchTeachers(
+        commonFields: commonFields,
+        teachers: teachersList,
+        teacherPhotos: photosMap,
+        signatureFile: _signatureFile,
+        sealFile: _sealFile,
+      );
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (res.success) {
+          final count = res.data?.length ?? _teacherItems.length;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🎉 Successfully saved $count teachers in batch!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          final nav = context.read<NavigationProvider>();
+          nav.clearEditSelections();
+          nav.navigateTo(AppTab.teacherList);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res.message ?? 'Failed to save batch teachers'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
       }
     }
   }
@@ -208,7 +337,6 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
   @override
   Widget build(BuildContext context) {
     final nav = context.read<NavigationProvider>();
-    final isEdit = widget.editTeacherId != null;
 
     if (_isFetchingInitial) {
       return const Center(child: CircularProgressIndicator());
@@ -221,7 +349,7 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Bar
+            // Top Navigation / Action Bar
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -229,14 +357,14 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isEdit ? 'Edit Teacher Record' : 'Register New Teacher',
+                      isEdit ? 'Edit Teacher Record' : 'Multi-Teacher Fast Entry Hub',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       isEdit
                           ? 'Modify details and replace photograph or signature'
-                          : 'Enter complete 25-point personal, professional and authorization details',
+                          : 'Enter all teachers at once. School and Headmaster Authorization is filled once at the end.',
                       style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
@@ -251,8 +379,19 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
                       child: const Text('Cancel'),
                     ),
                     const SizedBox(width: 12),
+                    if (!isEdit) ...[
+                      ElevatedButton.icon(
+                        onPressed: _addNewTeacherRow,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('+ Add Another Teacher'),
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
                     CustomButton(
-                      label: isEdit ? 'Update Teacher' : 'Save Teacher Record',
+                      label: isEdit
+                          ? 'Update Teacher'
+                          : 'Save Teacher Records (${_teacherItems.length})',
                       icon: Icons.save_rounded,
                       isLoading: _isLoading,
                       onPressed: _submitForm,
@@ -264,183 +403,41 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
 
             const SizedBox(height: 24),
 
-            // Card 1: Personal Information
+            // Dynamic Teacher Cards List
+            ..._teacherItems.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return _buildTeacherCard(index, item);
+            }),
+
+            // Add Another Teacher Button Bar
+            if (!isEdit) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: OutlinedButton.icon(
+                  onPressed: _addNewTeacherRow,
+                  icon: const Icon(Icons.person_add_alt_1, size: 18, color: AppColors.accent),
+                  label: Text(
+                    '+ Add Another Teacher (#${_teacherItems.length + 1})',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.accent),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.accent, width: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Section 2: Shared School & Authorization Information (Filled Once)
             _sectionCard(
-              title: '1. Personal Information',
-              subtitle: 'Candidate biological identity, contact information, and photograph',
-              icon: Icons.badge_outlined,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Photos & Signatures column
-                    Column(
-                      children: [
-                        ImagePickerBox(
-                          label: 'Teacher Photograph',
-                          selectedFile: _photoFile,
-                          existingPath: _existingPhotoPath,
-                          onImageSelected: (f) => setState(() => _photoFile = f),
-                          width: 150,
-                          height: 180,
-                          isRequired: true,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 24),
-
-                    // Inputs columns
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: CustomTextField(
-                                  controller: _teacherIdCtrl,
-                                  label: 'Teacher ID',
-                                  hint: isEdit ? null : 'Leave blank for auto-generation',
-                                  readOnly: isEdit,
-                                  prefixIcon: Icons.fingerprint,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                flex: 2,
-                                child: CustomTextField(
-                                  controller: _fullNameCtrl,
-                                  label: 'Full Name',
-                                  isRequired: true,
-                                  prefixIcon: Icons.person_outline,
-                                  validator: (v) => Validators.requiredField(v, 'Full Name'),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: CustomTextField(
-                                  controller: _fatherNameCtrl,
-                                  label: "Father's Name",
-                                  isRequired: true,
-                                  validator: (v) => Validators.requiredField(v, "Father's Name"),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: CustomTextField(
-                                  controller: _motherNameCtrl,
-                                  label: "Mother's Name",
-                                  isRequired: true,
-                                  validator: (v) => Validators.requiredField(v, "Mother's Name"),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () => _pickDate(_dobCtrl),
-                                  child: IgnorePointer(
-                                    child: CustomTextField(
-                                      controller: _dobCtrl,
-                                      label: 'Date of Birth (YYYY-MM-DD)',
-                                      isRequired: true,
-                                      prefixIcon: Icons.calendar_today,
-                                      validator: (v) => Validators.requiredField(v, 'Date of Birth'),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: CustomDropdown<String>(
-                                  label: 'Gender',
-                                  value: _selectedGender,
-                                  isRequired: true,
-                                  items: AppConstants.genders
-                                      .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                                      .toList(),
-                                  onChanged: (v) => setState(() => _selectedGender = v),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: CustomDropdown<String>(
-                                  label: 'Blood Group',
-                                  value: _selectedBloodGroup,
-                                  isRequired: true,
-                                  items: AppConstants.bloodGroups
-                                      .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-                                      .toList(),
-                                  onChanged: (v) => setState(() => _selectedBloodGroup = v),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomTextField(
-                        controller: _mobileCtrl,
-                        label: 'Mobile Number',
-                        isRequired: true,
-                        keyboardType: TextInputType.phone,
-                        prefixIcon: Icons.phone_android,
-                        validator: (v) => Validators.mobile(v),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: CustomTextField(
-                        controller: _altMobileCtrl,
-                        label: 'Alternate Contact Number',
-                        keyboardType: TextInputType.phone,
-                        prefixIcon: Icons.phone,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: CustomTextField(
-                        controller: _emailCtrl,
-                        label: 'Email Address',
-                        isRequired: true,
-                        keyboardType: TextInputType.emailAddress,
-                        prefixIcon: Icons.email_outlined,
-                        validator: (v) => Validators.email(v),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  controller: _addressCtrl,
-                  label: 'Complete Residential Address',
-                  isRequired: true,
-                  maxLines: 2,
-                  prefixIcon: Icons.home_outlined,
-                  validator: (v) => Validators.requiredField(v, 'Residential Address'),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Card 2: Professional Information
-            _sectionCard(
-              title: '2. Professional Information',
-              subtitle: 'School posting, designation, academic subject and state codes',
-              icon: Icons.work_outline,
+              title: isEdit
+                  ? 'School & Headmaster Authorization'
+                  : 'School & Headmaster Authorization (Common For All Teachers)',
+              subtitle: 'School posting and digital signature/seal applied to all teachers in this batch',
+              icon: Icons.verified_outlined,
               children: [
                 Row(
                   children: [
@@ -467,111 +464,47 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                CustomTextField(
-                  controller: _schoolAddressCtrl,
-                  label: 'School Address',
-                  isRequired: true,
-                  prefixIcon: Icons.location_on_outlined,
-                  validator: (v) => Validators.requiredField(v, 'School Address'),
-                ),
-                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
-                      child: CustomDropdown<String>(
-                        label: 'Designation',
-                        value: _selectedDesignation,
-                        isRequired: true,
-                        items: AppConstants.teacherDesignations
-                            .map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 12))))
-                            .toList(),
-                        onChanged: (v) => setState(() => _selectedDesignation = v),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
+                      flex: 2,
                       child: CustomTextField(
-                        controller: _subjectCtrl,
-                        label: 'Subject',
-                        isRequired: true,
-                        validator: (v) => Validators.requiredField(v, 'Subject'),
+                        controller: _schoolAddressCtrl,
+                        label: 'School Address (Optional)',
+                        prefixIcon: Icons.location_on_outlined,
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _pickDate(_dojCtrl),
-                        child: IgnorePointer(
-                          child: CustomTextField(
-                            controller: _dojCtrl,
-                            label: 'Date of Joining (YYYY-MM-DD)',
-                            isRequired: true,
-                            prefixIcon: Icons.event,
-                            validator: (v) => Validators.requiredField(v, 'Date of Joining'),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
                     Expanded(
                       child: CustomTextField(
                         controller: _blockCtrl,
-                        label: 'Block Name',
-                        isRequired: true,
-                        validator: (v) => Validators.requiredField(v, 'Block Name'),
+                        label: 'Block Name (Optional)',
+                        prefixIcon: Icons.map_outlined,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: CustomTextField(
                         controller: _districtCtrl,
-                        label: 'District Name',
-                        isRequired: true,
-                        validator: (v) => Validators.requiredField(v, 'District Name'),
+                        label: 'District Name (Optional)',
+                        prefixIcon: Icons.holiday_village_outlined,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: CustomTextField(
                         controller: _stateCtrl,
-                        label: 'State',
-                        isRequired: true,
-                        validator: (v) => Validators.requiredField(v, 'State'),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: CustomTextField(
-                        controller: _qualificationCtrl,
-                        label: 'Qualification',
-                        hint: 'e.g., M.Sc, B.Ed',
-                        isRequired: true,
-                        validator: (v) => Validators.requiredField(v, 'Qualification'),
+                        label: 'State (Optional)',
+                        prefixIcon: Icons.public,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Card 3: Authorization Information
-            _sectionCard(
-              title: '3. Authorization Information',
-              subtitle: 'Headmaster approval, digital signature, and official seal',
-              icon: Icons.verified_outlined,
-              children: [
+                const SizedBox(height: 16),
                 CustomTextField(
                   controller: _headmasterNameCtrl,
-                  label: 'Headmaster / Principal Name',
-                  isRequired: true,
+                  label: 'Headmaster / Principal Name (Optional)',
                   prefixIcon: Icons.admin_panel_settings_outlined,
-                  validator: (v) => Validators.requiredField(v, 'Headmaster Name'),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -579,13 +512,12 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
                   children: [
                     Expanded(
                       child: ImagePickerBox(
-                        label: 'Headmaster Signature',
+                        label: 'Headmaster Signature (Upload Once for all teachers)',
                         selectedFile: _signatureFile,
                         existingPath: _existingSignaturePath,
                         onImageSelected: (f) => setState(() => _signatureFile = f),
                         width: double.infinity,
                         height: 130,
-                        isRequired: true,
                         helperText: 'Transparent PNG or JPG signature image',
                       ),
                     ),
@@ -598,7 +530,7 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
                         onImageSelected: (f) => setState(() => _sealFile = f),
                         width: double.infinity,
                         height: 130,
-                        helperText: 'Circular seal or stamp stamp image',
+                        helperText: 'Circular seal or stamp image',
                       ),
                     ),
                   ],
@@ -606,7 +538,7 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
               ],
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
 
             // Bottom Action buttons
             Row(
@@ -621,7 +553,9 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
                 ),
                 const SizedBox(width: 14),
                 CustomButton(
-                  label: isEdit ? 'Update Teacher' : 'Save Teacher Record',
+                  label: isEdit
+                      ? 'Update Teacher'
+                      : 'Save All Teacher Records (${_teacherItems.length})',
                   icon: Icons.check_circle_outline,
                   isLoading: _isLoading,
                   onPressed: _submitForm,
@@ -630,6 +564,258 @@ class _TeacherFormScreenState extends State<TeacherFormScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTeacherCard(int index, TeacherEntryItem item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Card Header with Teacher Number and Remove button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Teacher #${index + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.accent),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    item.fullNameCtrl.text.isNotEmpty ? item.fullNameCtrl.text : 'Personal & Academic Details',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+              if (_teacherItems.length > 1 && !isEdit)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
+                  tooltip: 'Remove Teacher #${index + 1}',
+                  onPressed: () => _removeTeacherRow(index),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(),
+          const SizedBox(height: 14),
+
+          // Teacher fields & Photo layout
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Photo column
+              ImagePickerBox(
+                label: 'Photograph',
+                selectedFile: item.photoFile,
+                existingPath: item.existingPhotoPath,
+                onImageSelected: (f) => setState(() => item.photoFile = f),
+                width: 140,
+                height: 170,
+                isRequired: false,
+                helperText: 'JPG / PNG passport photo',
+              ),
+              const SizedBox(width: 20),
+
+              // Inputs grid
+              Expanded(
+                child: Column(
+                  children: [
+                    // Row 1: Full Name, Father's Name, Mother's Name
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: CustomTextField(
+                            controller: item.fullNameCtrl,
+                            label: 'Full Name',
+                            isRequired: true,
+                            prefixIcon: Icons.person_outline,
+                            validator: (v) => Validators.requiredField(v, 'Full Name'),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: item.fatherNameCtrl,
+                            label: "Father's Name (Optional)",
+                            prefixIcon: Icons.family_restroom,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: item.motherNameCtrl,
+                            label: "Mother's Name (Optional)",
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Row 2: Date of Birth (Manual + Calendar), Gender, Blood Group
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: item.dobCtrl,
+                            label: 'Date of Birth (YYYY-MM-DD)',
+                            hint: 'Type e.g. 1990-05-15 or pick',
+                            prefixIcon: Icons.calendar_today_outlined,
+                            suffix: IconButton(
+                              icon: const Icon(Icons.calendar_month, color: AppColors.accent, size: 20),
+                              tooltip: 'Pick from Calendar',
+                              onPressed: () => _pickDateForController(item.dobCtrl, isDob: true),
+                            ),
+                            readOnly: false, // Manual typing allowed!
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: CustomDropdown<String>(
+                            label: 'Gender',
+                            value: item.selectedGender,
+                            items: AppConstants.genders
+                                .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                                .toList(),
+                            onChanged: (v) => setState(() => item.selectedGender = v ?? 'Male'),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: CustomDropdown<String>(
+                            label: 'Blood Group (Optional)',
+                            value: item.selectedBloodGroup,
+                            items: AppConstants.bloodGroups
+                                .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                                .toList(),
+                            onChanged: (v) => setState(() => item.selectedBloodGroup = v ?? 'O+'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Row 3: Mobile, Alternate Mobile, Email
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: item.mobileCtrl,
+                            label: 'Mobile Number',
+                            isRequired: true,
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: Icons.phone_android,
+                            validator: (v) => Validators.mobile(v),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: item.altMobileCtrl,
+                            label: 'Alternate Number (Optional)',
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: Icons.phone,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: item.emailCtrl,
+                            label: 'Email (Optional)',
+                            keyboardType: TextInputType.emailAddress,
+                            prefixIcon: Icons.email_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Row 4: Designation, Subject, Joining Date (Manual + Calendar), Qualification
+          Row(
+            children: [
+              Expanded(
+                child: CustomDropdown<String>(
+                  label: 'Designation',
+                  value: item.selectedDesignation,
+                  isRequired: true,
+                  items: AppConstants.teacherDesignations
+                      .map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 12))))
+                      .toList(),
+                  onChanged: (v) => setState(() => item.selectedDesignation = v ?? 'Assistant Teacher'),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: CustomTextField(
+                  controller: item.subjectCtrl,
+                  label: 'Subject',
+                  isRequired: true,
+                  hint: 'e.g. Mathematics, Science',
+                  prefixIcon: Icons.menu_book,
+                  validator: (v) => Validators.requiredField(v, 'Subject'),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: CustomTextField(
+                  controller: item.dojCtrl,
+                  label: 'Date of Joining (YYYY-MM-DD)',
+                  hint: 'Type e.g. 2018-08-01 or pick',
+                  prefixIcon: Icons.event,
+                  suffix: IconButton(
+                    icon: const Icon(Icons.calendar_month, color: AppColors.accent, size: 20),
+                    tooltip: 'Pick from Calendar',
+                    onPressed: () => _pickDateForController(item.dojCtrl),
+                  ),
+                  readOnly: false, // Manual typing allowed!
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: CustomTextField(
+                  controller: item.qualificationCtrl,
+                  label: 'Qualification (Optional)',
+                  hint: 'e.g. M.Sc, B.Ed',
+                  prefixIcon: Icons.school_outlined,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Row 5: Complete Residential Address
+          CustomTextField(
+            controller: item.addressCtrl,
+            label: 'Complete Residential Address (Optional)',
+            hint: 'House/Flat No, Ward, Village/City, Post, Police Station',
+            prefixIcon: Icons.home_outlined,
+          ),
+        ],
       ),
     );
   }

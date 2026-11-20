@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/picked_media_file.dart';
@@ -60,6 +61,39 @@ class TeacherService {
       files: files,
       isPut: isEdit,
       fromJsonData: (data) => TeacherModel.fromJson(data as Map<String, dynamic>),
+    );
+  }
+
+  static Future<ApiResponse<List<TeacherModel>>> saveBatchTeachers({
+    required Map<String, String> commonFields,
+    required List<Map<String, String>> teachers,
+    Map<int, PickedMediaFile?>? teacherPhotos,
+    PickedMediaFile? signatureFile,
+    PickedMediaFile? sealFile,
+  }) async {
+    final fields = Map<String, String>.from(commonFields);
+    fields['teachers'] = jsonEncode(teachers);
+
+    final files = <String, PickedMediaFile?>{
+      if (signatureFile != null) 'headmaster_signature': signatureFile,
+      if (sealFile != null) 'official_seal': sealFile,
+    };
+
+    if (teacherPhotos != null) {
+      teacherPhotos.forEach((idx, photo) {
+        if (photo != null) {
+          files['teacher_photo_$idx'] = photo;
+        }
+      });
+    }
+
+    return ApiService.postMultipart<List<TeacherModel>>(
+      '${ApiEndpoints.teachers}/batch',
+      fields: fields,
+      files: files,
+      fromJsonData: (data) => (data as List<dynamic>)
+          .map((e) => TeacherModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
