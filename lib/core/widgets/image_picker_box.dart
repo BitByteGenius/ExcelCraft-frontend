@@ -40,7 +40,7 @@ class ImagePickerBox extends StatelessWidget {
       if (result != null && result.files.isNotEmpty) {
         final picked = result.files.single;
         Uint8List? bytes = picked.bytes;
-        if (bytes == null && picked.path != null && !kIsWeb) {
+        if (!kIsWeb && bytes == null && picked.path != null) {
           bytes = io.File(picked.path!).readAsBytesSync();
         }
 
@@ -49,7 +49,7 @@ class ImagePickerBox extends StatelessWidget {
             PickedMediaFile(
               name: picked.name,
               bytes: bytes,
-              path: picked.path,
+              path: kIsWeb ? null : picked.path,
             ),
           );
         }

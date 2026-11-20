@@ -183,85 +183,125 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
-        children: [
-          if (_selectedSchool != null) ...[
-            InkWell(
-              onTap: _backToSchools,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.border),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 750;
+
+          final titleWidget = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _selectedSchool != null
+                    ? _selectedSchool!.schoolName
+                    : 'Schools Faculty Directory',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
-                child: const Row(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _selectedSchool != null
+                    ? 'UDISE: ${_selectedSchool!.udiseCode} | $_totalCount Registered Teachers'
+                    : '${_schools.length} Institutions Registered with Faculty Records',
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          );
+
+          final backButtonWidget = _selectedSchool != null
+              ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.arrow_back, size: 16, color: AppColors.textPrimary),
-                    SizedBox(width: 6),
-                    Text('All Schools', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    InkWell(
+                      onTap: _backToSchools,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.arrow_back, size: 15, color: AppColors.textPrimary),
+                            SizedBox(width: 5),
+                            Text('All Schools', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right, size: 16, color: AppColors.textMuted),
+                    const SizedBox(width: 8),
+                  ],
+                )
+              : null;
+
+          final actionButtonsWidget = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (_selectedSchool != null)
+                ElevatedButton.icon(
+                  onPressed: () => ExcelExportService.downloadSchoolTeacherExcel(context, _selectedSchool!.schoolName),
+                  icon: const Icon(Icons.table_view_rounded, size: 15),
+                  label: const Text('Export School Excel', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F766E),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  nav.clearEditSelections();
+                  nav.navigateTo(AppTab.teacherAdd);
+                },
+                icon: const Icon(Icons.person_add_alt_1, size: 15),
+                label: const Text('+ Add Teacher', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            ],
+          );
+
+          if (isNarrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (backButtonWidget != null) backButtonWidget,
+                    Expanded(child: titleWidget),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _selectedSchool != null
-                      ? _selectedSchool!.schoolName
-                      : 'Schools Faculty Directory',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  _selectedSchool != null
-                      ? 'UDISE: ${_selectedSchool!.udiseCode} • $_totalCount Registered Teachers'
-                      : '${_schools.length} Institutions Registered with Faculty Records',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                ),
+                const SizedBox(height: 10),
+                actionButtonsWidget,
               ],
-            ),
-          ),
-          const SizedBox(width: 12),
+            );
+          }
 
-          // Export Button for School
-          if (_selectedSchool != null) ...[
-            ElevatedButton.icon(
-              onPressed: () => ExcelExportService.downloadSchoolTeacherExcel(context, _selectedSchool!.schoolName),
-              icon: const Icon(Icons.table_view_rounded, size: 16),
-              label: const Text('Export School Excel'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F766E),
-                foregroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 10),
-          ],
-
-          // Quick Add Teacher / Batch Button
-          ElevatedButton.icon(
-            onPressed: () {
-              nav.clearEditSelections();
-              nav.navigateTo(AppTab.teacherAdd);
-            },
-            icon: const Icon(Icons.person_add_alt_1, size: 16),
-            label: const Text('+ Add Teacher'),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
-          ),
-        ],
+          return Row(
+            children: [
+              if (backButtonWidget != null) backButtonWidget,
+              Expanded(child: titleWidget),
+              const SizedBox(width: 12),
+              actionButtonsWidget,
+            ],
+          );
+        },
       ),
     );
   }
@@ -408,7 +448,7 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
           borderRadius: BorderRadius.circular(12),
           hoverColor: AppColors.background,
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -416,17 +456,17 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
                         color: AppColors.accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(
-                        child: Icon(Icons.account_balance, color: AppColors.accent, size: 24),
+                        child: Icon(Icons.account_balance, color: AppColors.accent, size: 22),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,9 +478,14 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-                          Row(
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -454,30 +499,30 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
                                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                                 ),
                               ),
-                              if (school.districtName.isNotEmpty) ...[
-                                const SizedBox(width: 8),
+                              if (school.districtName.isNotEmpty)
                                 Text(
                                   '${school.districtName}, ${school.state}',
                                   style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
                             ],
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                     // Faculty Count Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFF0F766E).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: const Color(0xFF0F766E).withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.people, size: 14, color: Color(0xFF0F766E)),
+                          const Icon(Icons.people, size: 13, color: Color(0xFF0F766E)),
                           const SizedBox(width: 4),
                           Text(
                             '${school.teacherCount} Teachers',
@@ -489,29 +534,40 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 const Divider(),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 // Card Footer with Actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  runSpacing: 8,
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (school.headmasterName.isNotEmpty)
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.admin_panel_settings_outlined, size: 14, color: AppColors.textMuted),
                           const SizedBox(width: 4),
-                          Text(
-                            'Principal: ${school.headmasterName}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 180),
+                            child: Text(
+                              'Principal: ${school.headmasterName}',
+                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
                         ],
                       )
                     else
                       const SizedBox.shrink(),
 
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
                       children: [
                         // Quick Export Excel button right on school card
                         OutlinedButton.icon(
@@ -523,7 +579,6 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
                             side: const BorderSide(color: Color(0xFF0F766E)),
                           ),
                         ),
-                        const SizedBox(width: 8),
 
                         // View Teachers button
                         ElevatedButton.icon(
@@ -595,11 +650,16 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
                     width: constraints.maxWidth > 700 ? 220 : constraints.maxWidth,
                     child: DropdownButtonFormField<String>(
                       initialValue: _selectedDesignation.isEmpty ? null : _selectedDesignation,
-                      hint: const Text('All Designations', style: TextStyle(fontSize: 12)),
+                      isExpanded: true,
+                      isDense: true,
+                      hint: const Text('All Designations', style: TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis),
                       items: [
-                        const DropdownMenuItem(value: '', child: Text('All Designations')),
+                        const DropdownMenuItem(value: '', child: Text('All Designations', overflow: TextOverflow.ellipsis)),
                         ...AppConstants.teacherDesignations.map(
-                          (d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis)),
+                          (d) => DropdownMenuItem(
+                            value: d,
+                            child: Text(d, style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis, maxLines: 1),
+                          ),
                         ),
                       ],
                       onChanged: (val) {
@@ -769,38 +829,46 @@ class _TeacherListScreenState extends State<TeacherListScreen> {
 
                           // Pagination Footer
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: const BoxDecoration(
                               border: Border(top: BorderSide(color: AppColors.border, width: 1)),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Showing ${_teachers.length} of $_totalCount faculty records',
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                ),
-                                Row(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Wrap(
+                                  alignment: WrapAlignment.spaceBetween,
+                                  runSpacing: 10,
+                                  spacing: 12,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    OutlinedButton(
-                                      onPressed: _currentPage > 1 ? () => _fetchTeachers(page: _currentPage - 1) : null,
-                                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                                      child: const Text('Previous'),
-                                    ),
-                                    const SizedBox(width: 12),
                                     Text(
-                                      'Page $_currentPage of $_totalPages',
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                      'Showing ${_teachers.length} of $_totalCount faculty records',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                     ),
-                                    const SizedBox(width: 12),
-                                    OutlinedButton(
-                                      onPressed: _currentPage < _totalPages ? () => _fetchTeachers(page: _currentPage + 1) : null,
-                                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                                      child: const Text('Next'),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        OutlinedButton(
+                                          onPressed: _currentPage > 1 ? () => _fetchTeachers(page: _currentPage - 1) : null,
+                                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                          child: const Text('Previous'),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          'Page $_currentPage of $_totalPages',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        OutlinedButton(
+                                          onPressed: _currentPage < _totalPages ? () => _fetchTeachers(page: _currentPage + 1) : null,
+                                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                          child: const Text('Next'),
+                                        ),
+                                      ],
                                     ),
                                   ],
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
                         ],

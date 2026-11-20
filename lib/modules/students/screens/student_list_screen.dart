@@ -118,98 +118,115 @@ class _StudentListScreenState extends State<StudentListScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: Row(
-              children: [
-                // Search Input
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search by Name, Student ID, Admission No, or Mobile...',
-                      prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                _fetchStudents();
-                              },
-                            )
-                          : null,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Search Input
+                    SizedBox(
+                      width: constraints.maxWidth > 800 ? 300 : constraints.maxWidth,
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search Name, ID, Admission No, or Mobile...',
+                          prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _fetchStudents();
+                                  },
+                                )
+                              : null,
+                        ),
+                        onSubmitted: (_) => _fetchStudents(),
+                      ),
                     ),
-                    onSubmitted: (_) => _fetchStudents(),
-                  ),
-                ),
-                const SizedBox(width: 14),
 
-                // Class Filter Dropdown
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedClass.isEmpty ? null : _selectedClass,
-                    hint: const Text('All Classes', style: TextStyle(fontSize: 13)),
-                    items: [
-                      const DropdownMenuItem(value: '', child: Text('All Classes')),
-                      ...AppConstants.classes.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 12)))),
-                    ],
-                    onChanged: (val) {
-                      setState(() => _selectedClass = val ?? '');
-                      _fetchStudents();
-                    },
-                    decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  ),
-                ),
-                const SizedBox(width: 14),
+                    // Class Filter Dropdown
+                    SizedBox(
+                      width: constraints.maxWidth > 800 ? 150 : (constraints.maxWidth - 12) / 2,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _selectedClass.isEmpty ? null : _selectedClass,
+                        isExpanded: true,
+                        isDense: true,
+                        hint: const Text('All Classes', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                        items: [
+                          const DropdownMenuItem(value: '', child: Text('All Classes', overflow: TextOverflow.ellipsis)),
+                          ...AppConstants.classes.map(
+                            (c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          setState(() => _selectedClass = val ?? '');
+                          _fetchStudents();
+                        },
+                        decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                      ),
+                    ),
 
-                // Section Filter Dropdown
-                SizedBox(
-                  width: 110,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedSection.isEmpty ? null : _selectedSection,
-                    hint: const Text('Section', style: TextStyle(fontSize: 13)),
-                    items: [
-                      const DropdownMenuItem(value: '', child: Text('All')),
-                      ...AppConstants.sections.map((s) => DropdownMenuItem(value: s, child: Text('Sec $s', style: const TextStyle(fontSize: 12)))),
-                    ],
-                    onChanged: (val) {
-                      setState(() => _selectedSection = val ?? '');
-                      _fetchStudents();
-                    },
-                    decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                  ),
-                ),
-                const SizedBox(width: 14),
+                    // Section Filter Dropdown
+                    SizedBox(
+                      width: constraints.maxWidth > 800 ? 110 : (constraints.maxWidth - 12) / 2,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _selectedSection.isEmpty ? null : _selectedSection,
+                        isExpanded: true,
+                        isDense: true,
+                        hint: const Text('Section', style: TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                        items: [
+                          const DropdownMenuItem(value: '', child: Text('All', overflow: TextOverflow.ellipsis)),
+                          ...AppConstants.sections.map(
+                            (s) => DropdownMenuItem(value: s, child: Text('Sec $s', style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          setState(() => _selectedSection = val ?? '');
+                          _fetchStudents();
+                        },
+                        decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                      ),
+                    ),
 
-                // Search & Reset Buttons
-                ElevatedButton(
-                  onPressed: () => _fetchStudents(),
-                  child: const Text('Search'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _selectedClass = '';
-                      _selectedSection = '';
-                    });
-                    _fetchStudents();
-                  },
-                  child: const Text('Reset'),
-                ),
-                const Spacer(),
+                    // Search & Reset Buttons
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _fetchStudents(),
+                          child: const Text('Search'),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _selectedClass = '';
+                              _selectedSection = '';
+                            });
+                            _fetchStudents();
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ],
+                    ),
 
-                // Add New Student Button
-                ElevatedButton.icon(
-                  onPressed: () {
-                    nav.clearEditSelections();
-                    nav.navigateTo(AppTab.studentAdd);
-                  },
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Add Student'),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-                ),
-              ],
+                    // Add New Student Button
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        nav.clearEditSelections();
+                        nav.navigateTo(AppTab.studentAdd);
+                      },
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add Student'),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
 
@@ -358,38 +375,46 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
                             // Pagination Footer
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               decoration: const BoxDecoration(
                                 border: Border(top: BorderSide(color: AppColors.border, width: 1)),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Showing ${_students.length} of $_totalCount student records',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                  ),
-                                  Row(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return Wrap(
+                                    alignment: WrapAlignment.spaceBetween,
+                                    runSpacing: 10,
+                                    spacing: 12,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
                                     children: [
-                                      OutlinedButton(
-                                        onPressed: _currentPage > 1 ? () => _fetchStudents(page: _currentPage - 1) : null,
-                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                                        child: const Text('Previous'),
-                                      ),
-                                      const SizedBox(width: 12),
                                       Text(
-                                        'Page $_currentPage of $_totalPages',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                        'Showing ${_students.length} of $_totalCount student records',
+                                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                                       ),
-                                      const SizedBox(width: 12),
-                                      OutlinedButton(
-                                        onPressed: _currentPage < _totalPages ? () => _fetchStudents(page: _currentPage + 1) : null,
-                                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
-                                        child: const Text('Next'),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          OutlinedButton(
+                                            onPressed: _currentPage > 1 ? () => _fetchStudents(page: _currentPage - 1) : null,
+                                            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                            child: const Text('Previous'),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'Page $_currentPage of $_totalPages',
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          OutlinedButton(
+                                            onPressed: _currentPage < _totalPages ? () => _fetchStudents(page: _currentPage + 1) : null,
+                                            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                                            child: const Text('Next'),
+                                          ),
+                                        ],
                                       ),
                                     ],
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
                             ),
                           ],

@@ -72,7 +72,7 @@ class IdCardPdfGenerator {
                         textAlign: pw.TextAlign.center,
                       ),
                       pw.Text(
-                        'STAFF IDENTITY CARD • UDISE: ${teacher.udiseCode}',
+                        'STAFF IDENTITY CARD | UDISE: ${teacher.udiseCode}',
                         style: const pw.TextStyle(
                           color: PdfColor.fromInt(0xFF93C5FD),
                           fontSize: 5.5,
@@ -308,7 +308,7 @@ class IdCardPdfGenerator {
                         textAlign: pw.TextAlign.center,
                       ),
                       pw.Text(
-                        'STUDENT IDENTITY CARD • SESSION ${student.academicSession}',
+                        'STUDENT IDENTITY CARD | SESSION ${student.academicSession}',
                         style: const pw.TextStyle(color: PdfColor.fromInt(0xFFCCFBF1), fontSize: 5.5),
                       ),
                     ],
@@ -397,7 +397,7 @@ class IdCardPdfGenerator {
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('UDISE: ${student.udiseCode} • ${student.districtName}', style: const pw.TextStyle(fontSize: 5, color: PdfColors.grey700)),
+                      pw.Text('UDISE: ${student.udiseCode} | ${student.districtName}', style: const pw.TextStyle(fontSize: 5, color: PdfColors.grey700)),
                       if (sigImage != null)
                         pw.Container(
                           height: 14,

@@ -52,6 +52,7 @@ class CustomDropdown<T> extends StatelessWidget {
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           initialValue: value,
+          isExpanded: true,
           items: items,
           onChanged: onChanged,
           validator: validator,
