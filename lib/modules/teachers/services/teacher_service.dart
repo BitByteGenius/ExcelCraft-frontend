@@ -3,8 +3,23 @@ import '../../../core/constants/api_endpoints.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/picked_media_file.dart';
 import '../../../models/teacher_model.dart';
+import '../../../models/school_model.dart';
 
 class TeacherService {
+  static Future<ApiResponse<List<SchoolSummaryModel>>> fetchSchoolsSummary({String search = ''}) async {
+    final queryParams = {
+      if (search.isNotEmpty) 'search': search,
+    };
+
+    return ApiService.get<List<SchoolSummaryModel>>(
+      '${ApiEndpoints.teachers}/schools/summary',
+      queryParams: queryParams,
+      fromJsonData: (data) => (data as List<dynamic>)
+          .map((e) => SchoolSummaryModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
   static Future<ApiResponse<List<TeacherModel>>> fetchTeachers({
     String search = '',
     String school = '',

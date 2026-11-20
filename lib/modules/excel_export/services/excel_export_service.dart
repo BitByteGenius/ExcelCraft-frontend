@@ -13,7 +13,19 @@ class ExcelExportService {
       context: context,
       url: ApiEndpoints.exportTeachers,
       defaultFileName: 'ExcelCraft_Teachers_${DateTime.now().millisecondsSinceEpoch}.xlsx',
-      moduleName: 'Teacher',
+      moduleName: 'All Teachers',
+    );
+  }
+
+  static Future<void> downloadSchoolTeacherExcel(BuildContext context, String schoolName) async {
+    final encoded = Uri.encodeComponent(schoolName);
+    final url = '${ApiEndpoints.exportTeachers}?school=$encoded';
+    final cleanName = schoolName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    await _downloadFile(
+      context: context,
+      url: url,
+      defaultFileName: 'ExcelCraft_${cleanName}_Teachers_${DateTime.now().millisecondsSinceEpoch}.xlsx',
+      moduleName: '$schoolName Faculty',
     );
   }
 
@@ -22,7 +34,7 @@ class ExcelExportService {
       context: context,
       url: ApiEndpoints.exportStudents,
       defaultFileName: 'ExcelCraft_Students_${DateTime.now().millisecondsSinceEpoch}.xlsx',
-      moduleName: 'Student',
+      moduleName: 'All Students',
     );
   }
 
